@@ -1,0 +1,48 @@
+# Environment variables
+.env
+.env.local
+.env*.local
+
+# API Keys and secrets (NEVER commit these)
+**/config.js
+**/secrets.json
+**/.aws
+
+# Node/Backend
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Build artifacts
+*.log
+.cache/
+.next/
+.nuxt/
+.pytest_cache/
+__pycache__/
+
+# Editor backups
+*.bak
+*.tmp
+
+# Local testing
+local.json
+test-output/

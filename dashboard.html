@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Brand</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">BRAND</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="products.html">Shop</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="dashboard">
+        <div class="container">
+            <h1>Admin Dashboard</h1>
+            
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <h3>Total Products</h3>
+                    <p class="stat" id="totalProducts">-</p>
+                </div>
+                <div class="dashboard-card">
+                    <h3>Inventory Status</h3>
+                    <p class="stat" id="inventoryStatus">Sync with B1</p>
+                </div>
+                <div class="dashboard-card">
+                    <h3>Orders Today</h3>
+                    <p class="stat" id="ordersToday">-</p>
+                </div>
+                <div class="dashboard-card">
+                    <h3>Storage (R2)</h3>
+                    <p class="stat" id="storageUsage">-</p>
+                </div>
+            </div>
+
+            <div class="dashboard-section">
+                <h2>Quick Actions</h2>
+                <div class="action-buttons">
+                    <button class="btn-secondary" onclick="syncR2()">Sync R2 Products</button>
+                    <button class="btn-secondary" onclick="syncB1()">Sync B1 Backups</button>
+                    <button class="btn-secondary" onclick="viewLogs()">View Logs</button>
+                </div>
+            </div>
+
+            <div class="dashboard-section">
+                <h2>Product Management</h2>
+                <form id="productForm" class="form">
+                    <input type="text" placeholder="Product Name" id="productName" required>
+                    <input type="number" placeholder="Price" id="productPrice" required>
+                    <input type="text" placeholder="Category (shirts/hoodies/bottoms)" id="productCategory" required>
+                    <input type="text" placeholder="R2 Image URL" id="productImage" required>
+                    <button type="submit" class="btn">Add Product</button>
+                </form>
+            </div>
+
+            <div class="dashboard-section">
+                <h2>Integration Status</h2>
+                <div class="status-box">
+                    <p><strong>R2 Bucket:</strong> <span id="r2Status">Not configured</span></p>
+                    <p><strong>B1 Account:</strong> <span id="b1Status">Not configured</span></p>
+                    <p><strong>Last Sync:</strong> <span id="lastSync">Never</span></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Brand. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

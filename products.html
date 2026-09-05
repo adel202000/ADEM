@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - Brand</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">BRAND</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="products.html">Shop</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="products-section">
+        <div class="container">
+            <h1>All Products</h1>
+            
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="shirts">T-Shirts</button>
+                <button class="filter-btn" data-filter="hoodies">Hoodies</button>
+                <button class="filter-btn" data-filter="bottoms">Bottoms</button>
+            </div>
+
+            <div class="products-grid" id="productsGrid">
+                <!-- Products will be loaded from R2 via JavaScript -->
+                <div class="loading">Loading products...</div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Brand. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/products.js"></script>
+</body>
+</html>
