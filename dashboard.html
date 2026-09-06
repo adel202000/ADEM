@@ -4,6 +4,122 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - Brand</title>
+  <!-- Defined immediately so the button never throws ReferenceError -->
+  <script>
+  window.handlePublishProducts = async function () {
+    var btn = document.getElementById('btnPublishProducts');
+    if (btn) { btn.disabled = true; btn.textContent = 'Publishing...'; }
+    function toast(msg, type) {
+      if (typeof showToast === 'function') showToast(msg, type || 'info');
+      else alert(msg);
+    }
+    try {
+      var token = sessionStorage.getItem('brand_admin_token') || localStorage.getItem('brand_admin_token');
+      if (window.StoreBackend && window.StoreBackend.getToken) {
+        try { token = window.StoreBackend.getToken() || token; } catch (e) {}
+      }
+
+      // Prefer live API when unlocked
+      if (token) {
+        try {
+          var res = await fetch('/api/products/publish', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            }
+          });
+          if (res.ok) {
+            var data = await res.json();
+            var extra = (data.r2 && data.r2.uploaded) ? ' + Cloudflare R2' : '';
+            toast((data.message || ('Published ' + (data.count || 0) + ' products')) + extra, 'success');
+            var hint = document.getElementById('publishStatusHint');
+            if (hint) {
+              hint.style.display = 'block';
+              hint.textContent = 'Last published: ' + new Date((data.published_at || Date.now())).toLocaleString() +
+                ' · ' + (data.count != null ? data.count : '') + ' products';
+            }
+            return;
+          }
+          if (res.status === 401) {
+            toast('Unlock admin first, then publish.', 'error');
+            return;
+          }
+        } catch (apiErr) {
+          console.warn('Publish API:', apiErr);
+        }
+      }
+
+      // Local fallback (no server / static mode)
+      var products = [];
+      if (window.StoreBackend && typeof window.StoreBackend.getProducts === 'function') {
+        products = await window.StoreBackend.getProducts();
+      } else {
+        try { products = JSON.parse(localStorage.getItem('brand_products') || '[]'); } catch (e) { products = []; }
+      }
+      if (!Array.isArray(products)) products = [];
+      // Strip base64 images — keep site small
+      products = products.filter(function (p) {
+        return p && !(typeof p.image === 'string' && p.image.indexOf('data:image') === 0);
+      });
+      var payload = { published_at: new Date().toISOString(), count: products.length, products: products };
+      localStorage.setItem('brand_products_published', JSON.stringify(payload));
+      localStorage.setItem('brand_products', JSON.stringify(products));
+      toast('Published ' + products.length + ' products locally' + (token ? '' : ' (unlock admin + npm start for server/R2)'), 'success');
+      var hint2 = document.getElementById('publishStatusHint');
+      if (hint2) {
+        hint2.style.display = 'block';
+        hint2.textContent = 'Last published: ' + new Date(payload.published_at).toLocaleString() + ' · ' + products.length + ' products';
+      }
+    } catch (err) {
+      toast('Publish error: ' + (err && err.message ? err.message : err), 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '\uD83D\uDE80 Publish Catalog';
+      }
+    }
+  };
+
+  // Polyfill missing StoreBackend helpers used by dashboard.js
+  window.__ademPatchBackend = function () {
+    if (!window.StoreBackend) return;
+    if (typeof window.StoreBackend.getStats !== 'function') {
+      window.StoreBackend.getStats = async function () {
+        try {
+          if (!this.isStaticMode) {
+            var r = await fetch('/api/stats');
+            if (r.ok) return await r.json();
+          }
+        } catch (e) {}
+        var orders = [];
+        try {
+          if (typeof this.getOrders === 'function') orders = await this.getOrders();
+          else orders = JSON.parse(localStorage.getItem('brand_orders') || '[]');
+        } catch (e2) { orders = []; }
+        if (!Array.isArray(orders)) orders = [];
+        var revenue = 0, waiting = 0, confirmed = 0, shipped = 0, cancelled = 0;
+        orders.forEach(function (o) {
+          var st = (o.status || '').toLowerCase();
+          if (st !== 'cancelled') revenue += Number(o.total_price || o.total || 0);
+          if (st === 'waiting' || st === 'pending') waiting++;
+          else if (st === 'confirmed') confirmed++;
+          else if (st === 'shipped' || st === 'delivered') shipped++;
+          else if (st === 'cancelled') cancelled++;
+        });
+        return {
+          total_orders: orders.length,
+          revenue: revenue,
+          waiting: waiting,
+          confirmed: confirmed,
+          shipped: shipped,
+          cancelled: cancelled
+        };
+      };
+    }
+  };
+  setInterval(window.__ademPatchBackend, 500);
+  </script>
   <script>
   (async function () {
     try {
@@ -12,52 +128,93 @@
       if (!res.ok) throw new Error('HTTP ' + res.status);
       var html = await res.text();
 
-      // Inject Publish button if missing
+      // Inject Publish button next to product catalog header
       if (html.indexOf('btnPublishProducts') === -1) {
         var needle = 'data-i18n="r2UploadDesc"';
         var idx = html.indexOf(needle);
         if (idx !== -1) {
           var closeP = html.indexOf('</p>', idx);
           if (closeP !== -1) {
-            var btnBlock =
-              '</p>\n' +
-              '                        <p id="publishStatusHint" style="display:none;font-size:12px;color:#166534;margin:6px 0 0;font-weight:500;"></p>\n' +
-              '                    </div>\n' +
-              '                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">\n' +
-              '                        <button type="button" class="btn" id="btnPublishProducts" onclick="handlePublishProducts()" ' +
-              'style="background:#0f172a;color:#fff;border:none;padding:10px 18px;font-weight:600;cursor:pointer;">\n' +
-              '                            \uD83D\uDE80 Publish Catalog\n' +
-              '                        </button>\n' +
-              '                        <span style="font-size:11px;color:#64748b;max-width:220px;text-align:right;">Deploys product list (URLs only)</span>\n' +
-              '                    </div>';
-            // Replace from </p> of the r2UploadDesc paragraph through the next closing </div></div> of the header row
             var after = html.substring(closeP);
-            var endHeader = after.indexOf('</div>');
-            if (endHeader !== -1) {
-              // find second </div> (closes the flex row)
-              var second = after.indexOf('</div>', endHeader + 6);
-              if (second !== -1) {
-                html = html.substring(0, closeP) + btnBlock + after.substring(second + 6);
-              }
+            var firstDiv = after.indexOf('</div>');
+            var secondDiv = firstDiv >= 0 ? after.indexOf('</div>', firstDiv + 6) : -1;
+            if (secondDiv >= 0) {
+              var btnBlock =
+                '</p>\n' +
+                '                        <p id="publishStatusHint" style="display:none;font-size:12px;color:#166534;margin:6px 0 0;font-weight:500;"></p>\n' +
+                '                    </div>\n' +
+                '                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">\n' +
+                '                        <button type="button" class="btn" id="btnPublishProducts" onclick="handlePublishProducts()" ' +
+                'style="background:#0f172a;color:#fff;border:none;padding:10px 18px;font-weight:600;cursor:pointer;">\n' +
+                '                            \uD83D\uDE80 Publish Catalog\n' +
+                '                        </button>\n' +
+                '                        <span style="font-size:11px;color:#64748b;max-width:220px;text-align:right;">Deploys product list (URLs only)</span>\n' +
+                '                    </div>';
+              html = html.substring(0, closeP) + btnBlock + after.substring(secondDiv + 6);
             }
           }
         }
       }
 
-      // Ensure helper scripts load after storage-engine / dashboard logic
-      if (html.indexOf('publish-client.js') === -1) {
-        html = html.replace(
-          '</body>',
-          '    <script src="js/no-base64-images.js"><\/script>\n' +
-          '    <script src="js/publish-client.js"><\/script>\n' +
-          '</body>'
-        );
-      } else if (html.indexOf('no-base64-images.js') === -1) {
+      // Keep no-base64 helper; publish handler is already inline above
+      if (html.indexOf('no-base64-images.js') === -1) {
         html = html.replace(
           '</body>',
           '    <script src="js/no-base64-images.js"><\/script>\n</body>'
         );
       }
+
+      // Re-declare handlePublishProducts inside written doc (document.write creates new global scope edge cases)
+      var inline =
+        '<script>(function(){' +
+        'if(typeof window.handlePublishProducts!=="function"){' +
+        'window.handlePublishProducts=window.parent&&window.parent.handlePublishProducts;' +
+        '}' +
+        'window.__ademPatchBackend&&window.__ademPatchBackend();' +
+        'setTimeout(function(){window.__ademPatchBackend&&window.__ademPatchBackend();},300);' +
+        '})();<\/script>\n';
+
+      // Actually embed the full handler again inside the written document so onclick always finds it
+      var fullHandler =
+        '<script>window.handlePublishProducts=async function(){' +
+        'var btn=document.getElementById("btnPublishProducts");' +
+        'if(btn){btn.disabled=true;btn.textContent="Publishing...";}' +
+        'function toast(m,t){if(typeof showToast==="function")showToast(m,t||"info");else alert(m);}' +
+        'try{' +
+        'var token=sessionStorage.getItem("brand_admin_token")||localStorage.getItem("brand_admin_token");' +
+        'if(window.StoreBackend&&window.StoreBackend.getToken){try{token=window.StoreBackend.getToken()||token;}catch(e){}}' +
+        'if(token){try{' +
+        'var res=await fetch("/api/products/publish",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token}});' +
+        'if(res.ok){var data=await res.json();var extra=(data.r2&&data.r2.uploaded)?" + Cloudflare R2":"";' +
+        'toast((data.message||("Published "+(data.count||0)+" products"))+extra,"success");' +
+        'var hint=document.getElementById("publishStatusHint");if(hint){hint.style.display="block";hint.textContent="Last published: "+new Date(data.published_at||Date.now()).toLocaleString()+" · "+(data.count!=null?data.count:"")+" products";}' +
+        'return;}if(res.status===401){toast("Unlock admin first, then publish.","error");return;}' +
+        '}catch(apiErr){console.warn("Publish API:",apiErr);}}' +
+        'var products=[];' +
+        'if(window.StoreBackend&&typeof window.StoreBackend.getProducts==="function"){products=await window.StoreBackend.getProducts();}' +
+        'else{try{products=JSON.parse(localStorage.getItem("brand_products")||"[]");}catch(e){products=[];}}' +
+        'if(!Array.isArray(products))products=[];' +
+        'products=products.filter(function(p){return p&&!(typeof p.image==="string"&&p.image.indexOf("data:image")===0);});' +
+        'var payload={published_at:new Date().toISOString(),count:products.length,products:products};' +
+        'localStorage.setItem("brand_products_published",JSON.stringify(payload));' +
+        'localStorage.setItem("brand_products",JSON.stringify(products));' +
+        'toast("Published "+products.length+" products locally"+(token?"":" (unlock admin + npm start for server/R2)"),"success");' +
+        'var hint2=document.getElementById("publishStatusHint");if(hint2){hint2.style.display="block";hint2.textContent="Last published: "+new Date(payload.published_at).toLocaleString()+" · "+products.length+" products";}' +
+        '}catch(err){toast("Publish error: "+(err&&err.message?err.message:err),"error");}' +
+        'finally{if(btn){btn.disabled=false;btn.innerHTML="\uD83D\uDE80 Publish Catalog";}}' +
+        '};' +
+        'window.__ademPatchBackend=function(){if(!window.StoreBackend)return;' +
+        'if(typeof window.StoreBackend.getStats!=="function"){window.StoreBackend.getStats=async function(){' +
+        'try{if(!this.isStaticMode){var r=await fetch("/api/stats");if(r.ok)return await r.json();}}catch(e){}' +
+        'var orders=[];try{if(typeof this.getOrders==="function")orders=await this.getOrders();else orders=JSON.parse(localStorage.getItem("brand_orders")||"[]");}catch(e2){orders=[];}' +
+        'if(!Array.isArray(orders))orders=[];var revenue=0,waiting=0,confirmed=0,shipped=0,cancelled=0;' +
+        'orders.forEach(function(o){var st=(o.status||"").toLowerCase();if(st!=="cancelled")revenue+=Number(o.total_price||o.total||0);' +
+        'if(st==="waiting"||st==="pending")waiting++;else if(st==="confirmed")confirmed++;else if(st==="shipped"||st==="delivered")shipped++;else if(st==="cancelled")cancelled++;});' +
+        'return{total_orders:orders.length,revenue:revenue,waiting:waiting,confirmed:confirmed,shipped:shipped,cancelled:cancelled};};}' +
+        '};window.__ademPatchBackend();setInterval(window.__ademPatchBackend,800);' +
+        '<\/script>\n';
+
+      html = html.replace('</body>', fullHandler + '</body>');
 
       document.open();
       document.write(html);
@@ -66,7 +223,7 @@
       document.body.innerHTML =
         '<div style="padding:40px;font-family:system-ui,sans-serif;">' +
         '<h2>Dashboard load failed</h2><p>' + (e && e.message ? e.message : e) + '</p>' +
-        '<p>Open the site via <code>npm start</code> (not only as a raw file).</p></div>';
+        '<p>Use <code>npm start</code> and open http://localhost:3000/dashboard.html</p></div>';
     }
   })();
   </script>
