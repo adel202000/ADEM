@@ -6,36 +6,72 @@
   <title>Admin Dashboard - Brand</title>
   <script>
   (async function () {
-    const url = 'https://raw.githubusercontent.com/adel202000/ADEM/340eb78a82d3ac585afb69776966fcfe25b683d7/dashboard.html';
-    const res = await fetch(url);
-    let html = await res.text();
+    try {
+      var url = 'https://raw.githubusercontent.com/adel202000/ADEM/340eb78a82d3ac585afb69776966fcfe25b683d7/dashboard.html';
+      var res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var html = await res.text();
 
-    const marker = '<p style="font-size: 13px; color: var(--accent); margin: 4px 0 0;" data-i18n="r2UploadDesc">Add apparel to the buyer collection. Pick a picture from your gallery to upload it straight to Cloudflare R2, generating and auto-pasting the link.</p>\n                    </div>\n                </div>';
-    const inject = '<p style="font-size: 13px; color: var(--accent); margin: 4px 0 0;" data-i18n="r2UploadDesc">Pick a picture — it uploads to Cloudflare R2 (or server /uploads). Only a short URL is saved so the site stays small. Base64 is blocked.</p>\n                        <p id="publishStatusHint" style="display: none; font-size: 12px; color: #166534; margin: 6px 0 0; font-weight: 500;"></p>\n                    </div>\n                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">\n                        <button type="button" class="btn" id="btnPublishProducts" onclick="handlePublishProducts()" title="Deploy current product list" style="background: #0f172a; color: #fff; border: none; padding: 10px 18px; font-weight: 600; cursor: pointer;">\n                            \uD83D\uDE80 <span data-i18n="publishProductsBtn">Publish Catalog</span>\n                        </button>\n                        <span style="font-size: 11px; color: #64748b; max-width: 220px; text-align: right;">Publishes product list (URLs only — no base64 images)</span>\n                    </div>\n                </div>';
-    if (html.indexOf('btnPublishProducts') === -1 && html.indexOf(marker) !== -1) {
-      html = html.replace(marker, inject);
-    }
+      // Inject Publish button if missing
+      if (html.indexOf('btnPublishProducts') === -1) {
+        var needle = 'data-i18n="r2UploadDesc"';
+        var idx = html.indexOf(needle);
+        if (idx !== -1) {
+          var closeP = html.indexOf('</p>', idx);
+          if (closeP !== -1) {
+            var btnBlock =
+              '</p>\n' +
+              '                        <p id="publishStatusHint" style="display:none;font-size:12px;color:#166534;margin:6px 0 0;font-weight:500;"></p>\n' +
+              '                    </div>\n' +
+              '                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">\n' +
+              '                        <button type="button" class="btn" id="btnPublishProducts" onclick="handlePublishProducts()" ' +
+              'style="background:#0f172a;color:#fff;border:none;padding:10px 18px;font-weight:600;cursor:pointer;">\n' +
+              '                            \uD83D\uDE80 Publish Catalog\n' +
+              '                        </button>\n' +
+              '                        <span style="font-size:11px;color:#64748b;max-width:220px;text-align:right;">Deploys product list (URLs only)</span>\n' +
+              '                    </div>';
+            // Replace from </p> of the r2UploadDesc paragraph through the next closing </div></div> of the header row
+            var after = html.substring(closeP);
+            var endHeader = after.indexOf('</div>');
+            if (endHeader !== -1) {
+              // find second </div> (closes the flex row)
+              var second = after.indexOf('</div>', endHeader + 6);
+              if (second !== -1) {
+                html = html.substring(0, closeP) + btnBlock + after.substring(second + 6);
+              }
+            }
+          }
+        }
+      }
 
-    var scripts = '';
-    if (html.indexOf('no-base64-images.js') === -1) {
-      scripts += '    <script src="js/no-base64-images.js"><\\/script>\\n';
-    }
-    if (html.indexOf('publish-client.js') === -1) {
-      scripts += '    <script src="js/publish-client.js"><\\/script>\\n';
-    }
-    if (scripts) {
-      html = html.replace('</body>', scripts + '</body>');
-    }
+      // Ensure helper scripts load after storage-engine / dashboard logic
+      if (html.indexOf('publish-client.js') === -1) {
+        html = html.replace(
+          '</body>',
+          '    <script src="js/no-base64-images.js"><\/script>\n' +
+          '    <script src="js/publish-client.js"><\/script>\n' +
+          '</body>'
+        );
+      } else if (html.indexOf('no-base64-images.js') === -1) {
+        html = html.replace(
+          '</body>',
+          '    <script src="js/no-base64-images.js"><\/script>\n</body>'
+        );
+      }
 
-    document.open();
-    document.write(html);
-    document.close();
-  })().catch(function (e) {
-    document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif;">Failed to load dashboard: ' + e.message + '</p>';
-  });
+      document.open();
+      document.write(html);
+      document.close();
+    } catch (e) {
+      document.body.innerHTML =
+        '<div style="padding:40px;font-family:system-ui,sans-serif;">' +
+        '<h2>Dashboard load failed</h2><p>' + (e && e.message ? e.message : e) + '</p>' +
+        '<p>Open the site via <code>npm start</code> (not only as a raw file).</p></div>';
+    }
+  })();
   </script>
 </head>
-<body style="font-family: system-ui, sans-serif; padding: 40px; color: #64748b;">
+<body style="font-family:system-ui,sans-serif;padding:40px;color:#64748b;">
   Loading admin dashboard\u2026
 </body>
 </html>
