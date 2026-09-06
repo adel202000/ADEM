@@ -1,0 +1,6 @@
+{
+  "name": "Brand Clothing Store",
+  "description": "Minimal clothing store featuring timeless apparel collections, customer order tracking, and private administrative management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,62 +1,95 @@
-# Brand - Minimal Clothing Store
+# Brand - Minimal Clothing Store with Cloudflare D1 Dashboard
 
-A minimal, generic clothing brand website with R2 product storage and B1 backup integration.
+A minimal, high-contrast clothing brand web application featuring an integrated **Cloudflare D1 SQL Orders Tracking & Analytics Dashboard**, **Cloudflare R2** product catalog storage, and **B1** backup capabilities.
+
+---
+
+## Private Dashboard & Security
+
+Both the **Admin Operations Dashboard** (`dashboard.html`) and the **Cloudflare D1 Orders & Tracking Dashboard** (`d1-dashboard.html`) are protected by administrative authentication:
+
+- **Default Admin Password**: `admin123`
+- **Environment Variable**: `ADMIN_PASSWORD` in `.env`
+- **Private Session Tokens**: Admin authentication grants a sliding-window session token (`x-admin-token` / Bearer token) that protects all sensitive endpoints (`/api/d1/orders`, `/api/d1/stats`, `/api/d1/query`, etc.).
+- **In-App Password Management**: Admins can change their password directly inside the dashboard using the "Key" button in the active session navbar badge.
+
+---
+
+## Universal Storage Engine (GitHub Pages Compatibility)
+
+This project features a **Universal Dual-Mode Storage Adapter** (`js/storage-engine.js`):
+
+1. **When running with Node.js backend (`npm start` or Cloud Run)**:
+   - Connects to the live SQLite / Cloudflare D1 backend on `/api/d1/*`.
+   - Admin authorization is enforced on both the server and client.
+
+2. **When deployed to GitHub Pages (Static Hosting)**:
+   - Automatically detects the static environment (or absence of a Node backend).
+   - Transparently switches to an in-browser D1 database simulation with `localStorage` persistence.
+   - The **private lock screen**, **order tracking milestones**, **carrier analytics**, **KPI metrics**, and **SQL console** continue to function seamlessly on GitHub Pages without requiring a backend server.
+
+---
 
 ## Project Structure
 
 ```
-├── index.html           # Homepage
-├── products.html        # Products page (R2 integrated)
-├── dashboard.html       # Admin dashboard (B1 integrated)
-├── styles.css          # Minimal CSS styling
+├── index.html              # Homepage
+├── products.html           # Storefront catalog
+├── dashboard.html          # Private admin operations dashboard
+├── d1-dashboard.html       # Private Cloudflare D1 orders & tracking dashboard
+├── styles.css             # High-contrast responsive styling
+├── server.js               # Express + SQLite D1 & Auth backend
+├── storage-engine.js       # Universal storage & API adapter (Node.js & GitHub Pages)
 ├── js/
-│   ├── products.js     # Products and R2 integration
-│   └── dashboard.js    # Dashboard and B1 integration
+│   ├── storage-engine.js   # Client-side backend adapter & offline D1 engine
+│   ├── d1-dashboard.js     # Cloudflare D1 tracking, analytics, and SQL console
+│   ├── dashboard.js        # Operations dashboard handlers & authentication
+│   └── products.js         # Products catalog & search
 └── README.md
 ```
 
-## Setup Instructions
+## Setup & Deployment Instructions
 
-### GitHub Pages Hosting
+### 1. Local / Server Deployment (Node.js)
 
-1. **Create GitHub Repository**
+```bash
+# Install dependencies
+npm install
+
+# Start the application server
+npm start
+```
+The application will be live at `http://localhost:3000`.
+
+### 2. GitHub Pages Deployment (Static Web Hosting)
+
+1. **Push the repository to GitHub**:
    ```bash
    git init
    git add .
-   git commit -m "Initial commit"
-   git remote add origin https://github.com/YOUR_USERNAME/clothing-brand.git
+   git commit -m "Add private D1 dashboard and GitHub Pages support"
+   git remote add origin https://github.com/YOUR_USERNAME/brand-store.git
+   git branch -M main
    git push -u origin main
    ```
 
-2. **Enable GitHub Pages**
-   - Go to repository Settings
-   - Scroll to "Pages"
-   - Set source to `main` branch
-   - Site will be live at `https://YOUR_USERNAME.github.io/clothing-brand/`
+2. **Enable GitHub Pages in GitHub Settings**:
+   - Navigate to **Settings** > **Pages**.
+   - Under **Build and deployment**, set **Source** to `Deploy from a branch`.
+   - Select the `main` branch and `/ (root)` folder, then click **Save**.
+   - Your site will be published at `https://YOUR_USERNAME.github.io/brand-store/`.
+   - Both dashboards will work immediately out of the box with the password `admin123`.
 
-### R2 Integration (Cloudflare)
+---
 
-1. **Create R2 Bucket**
-   - Log into Cloudflare dashboard
-   - Navigate to R2
-   - Create a new bucket (e.g., `clothing-brand-products`)
+## Features
 
-2. **Get API Credentials**
-   - Create API token with R2 permissions
-   - Note: `Account ID`, `Access Key ID`, `Secret Access Key`
+- 🔒 **Private Admin Access**: Dedicated lock screen preventing unauthorized viewing of customer addresses, orders, and financial data.
+- 📦 **Order Milestone Stepper**: Visual tracking stages (Placed &rarr; Shipped &rarr; In Transit &rarr; Out for Delivery &rarr; Delivered).
+- 📊 **Real-time Statistics**: Order KPIs, Average Order Value (AOV), daily volume trends, and carrier performance breakdown.
+- 💻 **Interactive SQL Console**: Preset queries and custom SQL execution with tabular result inspector.
+- 🌐 **GitHub Pages Dual-Mode**: Seamlessly operates with full fidelity on both static hosts and Node servers.
 
-3. **Backend Configuration** (Node.js/Python/etc)
-   ```javascript
-   // Example Node.js setup
-   const AWS = require('aws-sdk');
-   
-   const s3 = new AWS.S3({
-       endpoint: 'https://<account-id>.r2.cloudflarestorage.com',
-       accessKeyId: process.env.R2_ACCESS_KEY,
-       secretAccessKey: process.env.R2_SECRET_KEY,
-       region: 'auto'
-   });
-   ```
 
 4. **Create Endpoints**
    - `GET /api/products` - List all products

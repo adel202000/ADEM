@@ -3,56 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brand - Clothing Collection</title>
+    <title>Brand Clothing Store</title>
+    <meta name="description" content="Minimal clothing store featuring timeless apparel collections, customer order tracking, and private administrative management.">
+    <meta property="og:title" content="Brand Clothing Store">
+    <meta property="og:description" content="Minimal clothing store featuring timeless apparel collections, customer order tracking, and private administrative management.">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <nav class="navbar">
+    <nav class="navbar" id="mainNavbar">
         <div class="container">
-            <div class="logo">BRAND</div>
+            <div class="logo" data-i18n="brandName">BRAND</div>
             <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="products.html">Shop</a></li>
-                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="index.html" id="navHomeLink" style="font-weight: 600;" data-i18n="navHome">Home</a></li>
+                <li><a href="products.html" id="navShopLink" data-i18n="navShop">Shop</a></li>
+                <li><a href="dashboard.html" id="navDashboardLink" data-i18n="navAdmin">Admin</a></li>
+                <li id="navD1OrdersItem" style="display: none;">
+                    <a href="d1-dashboard.html" class="nav-pill-d1" id="navD1OrdersLink">
+                        <span class="dot"></span> 🔒 D1 Orders
+                    </a>
+                </li>
+                <li id="headerLangSwitcherContainer"></li>
             </ul>
         </div>
     </nav>
 
-    <header class="hero">
+    <header class="hero" id="heroSection">
         <div class="container">
             <h1>Minimal. Essential. Quality.</h1>
-            <p>Timeless clothing for everyday wear</p>
-            <a href="products.html" class="btn">Shop Collection</a>
+            <p>Timeless clothing designed for everyday wear.</p>
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <a href="products.html" class="btn" id="heroShopBtn">Shop Collection</a>
+                <a href="#quickTrackSection" class="btn btn-secondary" id="heroTrackBtn">Track Order</a>
+                <a href="d1-dashboard.html" class="btn btn-secondary" id="heroD1Btn" style="display: none;">D1 Orders Dashboard</a>
+            </div>
         </div>
     </header>
 
-    <section class="featured">
+    <!-- Quick Order Tracking for Customers -->
+    <section class="quick-track-section" id="quickTrackSection" style="padding: 40px 0; background: #ffffff; border-bottom: 1px solid var(--border);">
+        <div class="container" style="max-width: 720px; text-align: center;">
+            <span class="d1-badge-chip" style="margin-bottom: 12px; display: inline-block;">Order Tracking</span>
+            <h2 style="font-size: 24px; font-weight: 500; margin-bottom: 8px;">Track Your Shipment</h2>
+            <p style="color: var(--accent); font-size: 14px; margin-bottom: 20px;">Enter your tracking number (e.g. TRK-D1-849204) or Order ID (e.g. ORD-7842)</p>
+            
+            <form id="quickTrackForm" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <input type="text" id="quickTrackInput" placeholder="Enter tracking code or Order ID" required style="padding: 12px 16px; border: 1px solid var(--border); font-size: 14px; min-width: 280px; outline: none; font-family: monospace;">
+                <button type="submit" class="btn" id="quickTrackSubmitBtn">Track Order</button>
+            </form>
+            <div id="quickTrackResult" style="margin-top: 20px; text-align: left; display: none;"></div>
+        </div>
+    </section>
+
+    <section class="featured" id="featuredSection">
         <div class="container">
-            <h2>Featured</h2>
+            <h2>Featured Collection</h2>
             <div class="grid-3">
-                <div class="card">
-                    <div class="img-placeholder"></div>
+                <div class="card" id="featuredCardShirts">
+                    <div class="img-placeholder" style="background-image: url('https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80'); background-size: cover; background-position: center;"></div>
                     <h3>T-Shirts</h3>
-                    <p>Premium basics</p>
+                    <p>Premium basics & heavyweight tees</p>
                 </div>
-                <div class="card">
-                    <div class="img-placeholder"></div>
+                <div class="card" id="featuredCardHoodies">
+                    <div class="img-placeholder" style="background-image: url('https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80'); background-size: cover; background-position: center;"></div>
                     <h3>Hoodies</h3>
-                    <p>Comfort essentials</p>
+                    <p>Comfort essentials & fleece</p>
                 </div>
-                <div class="card">
-                    <div class="img-placeholder"></div>
+                <div class="card" id="featuredCardBottoms">
+                    <div class="img-placeholder" style="background-image: url('https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=500&auto=format&fit=crop&q=80'); background-size: cover; background-position: center;"></div>
                     <h3>Bottoms</h3>
-                    <p>Versatile styles</p>
+                    <p>Versatile joggers & denim</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <footer>
+    <!-- Cloudflare D1 Architecture Highlights (Protected: Rendered Only For Authenticated Admins) -->
+    <section class="d1-overview-section" id="d1OverviewSection" style="display: none; padding: 60px 0; background: var(--bg); border-top: 1px solid var(--border);">
         <div class="container">
-            <p>&copy; 2025 Brand. All rights reserved.</p>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <span class="d1-badge-chip">Admin Access Active</span>
+                    <h2 style="font-size: 26px; font-weight: 500; margin-top: 8px;">Order Logistics & Analytics Engine</h2>
+                </div>
+                <a href="d1-dashboard.html" class="btn" id="viewFullD1DashboardBtn">Open Full D1 Dashboard &rarr;</a>
+            </div>
+
+            <div class="dashboard-grid" style="margin-bottom: 0;">
+                <div class="dashboard-card" id="d1CardTotalOrders">
+                    <h3>Orders in D1</h3>
+                    <p class="stat" id="homeD1OrderCount">--</p>
+                    <p style="font-size: 12px; color: var(--accent); margin-top: 8px;">Real-time SQLite database</p>
+                </div>
+                <div class="dashboard-card" id="d1CardActiveShipments">
+                    <h3>Active Shipments</h3>
+                    <p class="stat" id="homeD1ActiveShipments">--</p>
+                    <p style="font-size: 12px; color: var(--accent); margin-top: 8px;">In transit with carriers</p>
+                </div>
+                <div class="dashboard-card" id="d1CardRevenue">
+                    <h3>Gross Revenue</h3>
+                    <p class="stat" id="homeD1Revenue">--</p>
+                    <p style="font-size: 12px; color: var(--accent); margin-top: 8px;">Calculated from D1 orders</p>
+                </div>
+                <div class="dashboard-card" id="d1CardDeliveryRate">
+                    <h3>Delivery Rate</h3>
+                    <p class="stat" id="homeD1DeliveryRate">98.4%</p>
+                    <p style="font-size: 12px; color: var(--accent); margin-top: 8px;">On-time fulfillment</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer id="mainFooter">
+        <div class="container">
+            <p>&copy; 2026 Brand Clothing Store. All rights reserved.</p>
         </div>
     </footer>
+
+    <!-- Universal Storage & API Adapter -->
+    <script src="js/storage-engine.js"></script>
+    <script src="js/i18n.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check Admin Status to conditionally show D1 elements
+            try {
+                const isAuth = await window.StoreBackend.isAuthenticated();
+                if (isAuth) {
+                    const navD1Item = document.getElementById('navD1OrdersItem');
+                    const heroD1 = document.getElementById('heroD1Btn');
+                    const d1Section = document.getElementById('d1OverviewSection');
+
+                    if (navD1Item) navD1Item.style.display = 'block';
+                    if (heroD1) heroD1.style.display = 'inline-block';
+                    if (d1Section) d1Section.style.display = 'block';
+
+                    // Load admin D1 stats
+                    try {
+                        const data = await window.StoreBackend.getStats();
+                        if (data && data.success && data.summary) {
+                            document.getElementById('homeD1OrderCount').textContent = data.summary.totalOrders;
+                            document.getElementById('homeD1ActiveShipments').textContent = data.summary.activeOrders;
+                            document.getElementById('homeD1Revenue').textContent = '$' + Number(data.summary.totalRevenue || 0).toLocaleString();
+                            document.getElementById('homeD1DeliveryRate').textContent = (data.summary.onTimeRate || 98.4) + '%';
+                        }
+                    } catch (e) {
+                        console.log('Admin stats fetch error:', e);
+                    }
+                }
+            } catch (authErr) {
+                console.log('Auth check error:', authErr);
+            }
+
+            // Check if URL has ?track= code from checkout
+            const urlParams = new URLSearchParams(window.location.search);
+            const trackCodeFromUrl = urlParams.get('track');
+            if (trackCodeFromUrl) {
+                const input = document.getElementById('quickTrackInput');
+                if (input) {
+                    input.value = trackCodeFromUrl;
+                    document.getElementById('quickTrackForm').dispatchEvent(new Event('submit'));
+                }
+            }
+
+            // Quick tracker lookup for customer
+            const trackForm = document.getElementById('quickTrackForm');
+            if (trackForm) {
+                trackForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const code = document.getElementById('quickTrackInput').value.trim();
+                    if (!code) return;
+                    
+                    const resultBox = document.getElementById('quickTrackResult');
+                    resultBox.style.display = 'block';
+                    resultBox.innerHTML = '<div style="padding: 16px; background: #f8fafc; border: 1px solid var(--border); font-size: 13px;">Locating shipment records...</div>';
+
+                    try {
+                        // Use universal tracking method (handles both Node API and GitHub Pages static storage)
+                        const json = await window.StoreBackend.trackOrder(code);
+                        if (json && json.success && json.tracking) {
+                            const tr = json.tracking;
+                            const statusMap = {
+                                processing: 'Processing',
+                                shipped: 'Shipped',
+                                in_transit: 'In Transit',
+                                out_for_delivery: 'Out for Delivery',
+                                delivered: 'Delivered',
+                                cancelled: 'Cancelled'
+                            };
+
+                            // Format milestones
+                            const eventsHtml = (tr.history || []).map(ev => `
+                                <div style="display: flex; gap: 12px; margin-top: 10px; font-size: 12px; border-left: 2px solid #000; padding-left: 12px; position: relative;">
+                                    <div>
+                                        <div style="font-weight: 600;">${ev.status}</div>
+                                        <div style="color: #64748b;">${ev.location || ''} &bull; ${new Date(ev.timestamp).toLocaleString()}</div>
+                                        ${ev.description ? `<div style="color: #334155; margin-top: 2px;">${ev.description}</div>` : ''}
+                                    </div>
+                                </div>
+                            `).join('');
+
+                            resultBox.innerHTML = `
+                                <div style="background: #ffffff; border: 1px solid #000; padding: 20px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                                        <div>
+                                            <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent);">Order ${tr.orderId}</span>
+                                            <h4 style="font-size: 16px; margin-top: 2px;">Tracking: <code style="background: #f1f5f9; padding: 2px 6px;">${tr.trackingNumber}</code></h4>
+                                        </div>
+                                        <span class="badge-status badge-${tr.status}">${statusMap[tr.status] || tr.status}</span>
+                                    </div>
+                                    <p style="font-size: 13px; color: #475569; margin-bottom: 14px;">Carrier: <strong>${tr.carrier}</strong> | Destination: <strong>${tr.shippingCity}, ${tr.shippingCountry}</strong> | ETA: <strong>${tr.estimatedDelivery}</strong></p>
+                                    
+                                    ${eventsHtml ? `
+                                        <div style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px;">
+                                            <h5 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Shipment Progress Timeline:</h5>
+                                            ${eventsHtml}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        } else {
+                            resultBox.innerHTML = `
+                                <div style="padding: 16px; background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; font-size: 13px;">
+                                    No shipment found matching "<strong>${code}</strong>". Please verify your tracking number and try again.
+                                    <br><span style="font-size: 12px; color: #666; margin-top: 4px; display: inline-block;">Try sample tracking: <code>TRK-D1-849204</code> or <code>ORD-7842</code></span>
+                                </div>
+                            `;
+                        }
+                    } catch (err) {
+                        resultBox.innerHTML = '<div style="padding: 16px; background: #fef2f2; color: #991b1b; font-size: 13px;">Error retrieving shipment tracking information.</div>';
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
+

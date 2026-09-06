@@ -3,81 +3,495 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Brand</title>
+    <title>Admin Dashboard - Brand</title>
+    <meta name="description" content="Admin order operations, status management, and store statistics.">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <nav class="navbar">
+    <!-- Top Navigation Bar -->
+    <nav class="navbar" id="dashboardNavbar">
         <div class="container">
-            <div class="logo">BRAND</div>
+            <div class="logo" data-i18n="brandName">BRAND</div>
             <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="products.html">Shop</a></li>
-                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="index.html" id="dashNavHome" data-i18n="navHome">Home</a></li>
+                <li><a href="products.html" id="dashNavShop" data-i18n="navShop">Shop</a></li>
+                <li><a href="dashboard.html" id="dashNavAdmin" style="font-weight: 600;"><span style="font-size: 11px;">🔒</span> <span data-i18n="navAdmin">Admin</span></a></li>
+                
+                <!-- Language Switcher in Navbar -->
+                <li id="dashLangSwitcherContainer"></li>
+
+                <!-- Admin Session Control (Visible when unlocked) -->
+                <li id="navAdminSessionContainer" style="display: none;">
+                    <div class="admin-session-bar">
+                        <span class="admin-session-indicator"></span>
+                        <span style="font-weight: 600;" data-i18n="navAdminActive">Admin Active</span>
+                        <button type="button" class="btn-admin-pwd" onclick="openChangePasswordModal()" title="Change Admin Password" data-i18n="navKey">Key</button>
+                        <button type="button" class="btn-admin-logout" onclick="handleAdminLogout()" title="Lock Dashboard" data-i18n="navLock">Lock</button>
+                    </div>
+                </li>
             </ul>
         </div>
     </nav>
 
-    <section class="dashboard">
-        <div class="container">
-            <h1>Admin Dashboard</h1>
+    <!-- Admin Authentication Lock Screen -->
+    <section id="adminAuthLockScreen" class="admin-auth-container">
+        <div class="admin-auth-card">
+            <div class="admin-auth-badge">🔒 <span data-i18n="adminAuthTitle">Administrator Sign In</span></div>
+            <h2 data-i18n="adminAuthTitle">Administrator Sign In</h2>
+            <p class="admin-auth-desc" data-i18n="adminAuthDesc">Administrative access is restricted to store staff. Enter your administrator password to unlock orders and catalog controls.</p>
             
-            <div class="dashboard-grid">
-                <div class="dashboard-card">
-                    <h3>Total Products</h3>
-                    <p class="stat" id="totalProducts">-</p>
+            <form id="adminLoginForm" onsubmit="handleAdminLoginSubmit(event)">
+                <div style="margin-bottom: 16px;">
+                    <label for="adminPasswordInput" style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;" data-i18n="adminPasswordLabel">Admin Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="adminPasswordInput" placeholder="Enter administrative password" data-i18n-placeholder="adminPasswordPlaceholder" required autocomplete="current-password">
+                        <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility('adminPasswordInput')" title="Show/Hide Password">👁</button>
+                    </div>
                 </div>
-                <div class="dashboard-card">
-                    <h3>Inventory Status</h3>
-                    <p class="stat" id="inventoryStatus">Sync with B1</p>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 13px;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--accent);">
+                        <input type="checkbox" id="adminRememberCheckbox" checked> <span data-i18n="rememberSession">Remember session</span>
+                    </label>
+                    <span style="color: #64748b; font-size: 12px;" data-i18n="defaultHint">Default: admin123</span>
                 </div>
-                <div class="dashboard-card">
-                    <h3>Orders Today</h3>
-                    <p class="stat" id="ordersToday">-</p>
-                </div>
-                <div class="dashboard-card">
-                    <h3>Storage (R2)</h3>
-                    <p class="stat" id="storageUsage">-</p>
-                </div>
-            </div>
-
-            <div class="dashboard-section">
-                <h2>Quick Actions</h2>
-                <div class="action-buttons">
-                    <button class="btn-secondary" onclick="syncR2()">Sync R2 Products</button>
-                    <button class="btn-secondary" onclick="syncB1()">Sync B1 Backups</button>
-                    <button class="btn-secondary" onclick="viewLogs()">View Logs</button>
-                </div>
-            </div>
-
-            <div class="dashboard-section">
-                <h2>Product Management</h2>
-                <form id="productForm" class="form">
-                    <input type="text" placeholder="Product Name" id="productName" required>
-                    <input type="number" placeholder="Price" id="productPrice" required>
-                    <input type="text" placeholder="Category (shirts/hoodies/bottoms)" id="productCategory" required>
-                    <input type="text" placeholder="R2 Image URL" id="productImage" required>
-                    <button type="submit" class="btn">Add Product</button>
-                </form>
-            </div>
-
-            <div class="dashboard-section">
-                <h2>Integration Status</h2>
-                <div class="status-box">
-                    <p><strong>R2 Bucket:</strong> <span id="r2Status">Not configured</span></p>
-                    <p><strong>B1 Account:</strong> <span id="b1Status">Not configured</span></p>
-                    <p><strong>Last Sync:</strong> <span id="lastSync">Never</span></p>
-                </div>
+                
+                <button type="submit" class="btn btn-block" id="adminLoginSubmitBtn" style="width: 100%; padding: 12px; font-size: 14px;" data-i18n="unlockDashboardBtn">Unlock Dashboard &rarr;</button>
+                
+                <div id="adminAuthError" class="admin-auth-error" style="display: none;"></div>
+            </form>
+            
+            <div class="admin-auth-footer">
+                <span>🛡️ Private session protected with token authentication</span>
             </div>
         </div>
     </section>
 
-    <footer>
+    <!-- Main Admin Dashboard (Visible only when unlocked) -->
+    <main class="dashboard" id="adminDashboardSection" style="display: none; padding-top: 40px;">
         <div class="container">
-            <p>&copy; 2025 Brand. All rights reserved.</p>
+            
+            <!-- Page Header -->
+            <div class="d1-header-bar" style="margin-bottom: 25px;">
+                <div class="d1-title-group">
+                    <h1 data-i18n="adminDashTitle">Admin Orders &amp; Store Management</h1>
+                    <p class="d1-subtitle" data-i18n="adminDashDesc">View orders, manage delivery statuses between Waiting, Confirmed, Delivered, or Cancelled, and access each category.</p>
+                </div>
+                <div class="d1-header-actions">
+                    <button class="btn" onclick="openCreateOrderModal()" id="btnCreateOrder">+ <span data-i18n="newOrderModalTitle">New Order</span></button>
+                    <button class="btn-secondary" onclick="refreshAdminOrders()" id="btnRefreshOrders">↻ <span data-i18n="btnRefresh">Refresh</span></button>
+                </div>
+            </div>
+
+            <!-- Required Statistics KPI Cards (Interactive & Filterable) -->
+            <!-- ALL STATICTIKS NEEDED: NUMBERS OF ORDERD MONEY, NUMBER OF DELIVERD, CANCELD, CONFIRMED AND WAITING WITH THE ABILITY TO ACCES EACH CATEGORY BY ADMIN -->
+            <div class="d1-stats-row" id="adminStatsGrid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 30px;">
+                
+                <!-- Stat 1: Ordered Money (Total sales revenue from all orders) -->
+                <div class="d1-stat-card stat-card-clickable" id="statCardMoney" onclick="selectCategoryFilter('all')" title="View all ordered money">
+                    <div class="d1-stat-title">
+                        <span data-i18n="statOrderedMoney">Ordered Money</span>
+                        <span style="font-size: 16px;">💳</span>
+                    </div>
+                    <div class="d1-stat-num" id="statTotalMoney" style="color: #0f172a;">$0.00</div>
+                    <div class="d1-stat-meta" data-i18n="statOrderedMoneyDesc">Total sales revenue from all orders</div>
+                </div>
+
+                <!-- Stat 2: Total Orders -->
+                <div class="d1-stat-card stat-card-clickable active-category" id="statCardAll" onclick="selectCategoryFilter('all')" title="Filter by All Orders">
+                    <span class="category-active-tag" data-i18n="filterCategoryAll">ALL</span>
+                    <div class="d1-stat-title">
+                        <span data-i18n="statTotalOrders">Total Orders</span>
+                        <span style="font-size: 16px;">📦</span>
+                    </div>
+                    <div class="d1-stat-num" id="statTotalOrders">0</div>
+                    <div class="d1-stat-meta" data-i18n="statTotalOrdersDesc">All customer purchases placed</div>
+                </div>
+
+                <!-- Stat 3: Waiting for Confirmation -->
+                <div class="d1-stat-card stat-card-clickable" id="statCardWaiting" onclick="selectCategoryFilter('waiting')" title="Filter by Waiting for confirmation">
+                    <span class="category-active-tag" data-i18n="status_waiting">WAITING</span>
+                    <div class="d1-stat-title">
+                        <span data-i18n="statWaiting">Waiting for confirmation</span>
+                        <span style="font-size: 16px;">⏳</span>
+                    </div>
+                    <div class="d1-stat-num" id="statWaitingCount" style="color: #d97706;">0</div>
+                    <div class="d1-stat-meta" data-i18n="statWaitingDesc">Orders pending review</div>
+                </div>
+
+                <!-- Stat 4: Confirmed -->
+                <div class="d1-stat-card stat-card-clickable" id="statCardConfirmed" onclick="selectCategoryFilter('confirmed')" title="Filter by Confirmed">
+                    <span class="category-active-tag" data-i18n="status_confirmed">CONFIRMED</span>
+                    <div class="d1-stat-title">
+                        <span data-i18n="statConfirmed">Confirmed</span>
+                        <span style="font-size: 16px;">📋</span>
+                    </div>
+                    <div class="d1-stat-num" id="statConfirmedCount" style="color: #2563eb;">0</div>
+                    <div class="d1-stat-meta" data-i18n="statConfirmedDesc">Orders verified &amp; in preparation</div>
+                </div>
+
+                <!-- Stat 5: Delivered -->
+                <div class="d1-stat-card stat-card-clickable" id="statCardDelivered" onclick="selectCategoryFilter('delivered')" title="Filter by Delivered">
+                    <span class="category-active-tag" data-i18n="status_delivered">DELIVERED</span>
+                    <div class="d1-stat-title">
+                        <span data-i18n="statDelivered">Delivered</span>
+                        <span style="font-size: 16px;">✓</span>
+                    </div>
+                    <div class="d1-stat-num" id="statDeliveredCount" style="color: #059669;">0</div>
+                    <div class="d1-stat-meta" data-i18n="statDeliveredDesc">Completed &amp; delivered orders</div>
+                </div>
+
+                <!-- Stat 6: Cancelled -->
+                <div class="d1-stat-card stat-card-clickable" id="statCardCancelled" onclick="selectCategoryFilter('cancelled')" title="Filter by Cancelled">
+                    <span class="category-active-tag" data-i18n="status_cancelled">CANCELLED</span>
+                    <div class="d1-stat-title">
+                        <span data-i18n="statCancelled">Cancelled</span>
+                        <span style="font-size: 16px;">✕</span>
+                    </div>
+                    <div class="d1-stat-num" id="statCancelledCount" style="color: #dc2626;">0</div>
+                    <div class="d1-stat-meta" data-i18n="statCancelledDesc">Rejected or cancelled orders</div>
+                </div>
+            </div>
+
+            <!-- Orders Management Panel -->
+            <div class="d1-panel" style="padding: 0; overflow: hidden; border: 1px solid var(--border); margin-bottom: 40px;" id="ordersRegistryPanel">
+                <div style="padding: 20px 24px; border-bottom: 1px solid var(--border); background: #fafafa; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <h2 style="font-size: 18px; font-weight: 600; margin: 0 0 4px;" data-i18n="ordersRegistryTitle">Orders Registry &amp; Status Management</h2>
+                        <p style="font-size: 13px; color: var(--accent); margin: 0;" data-i18n="ordersRegistrySubtitle">Directly review customer requests and update statuses between Waiting, Confirmed, Delivered, or Cancelled.</p>
+                    </div>
+                    <div>
+                        <span style="font-size: 13px; color: #64748b;">
+                            <span data-i18n="showingCategory">Category:</span> <strong id="currentCategoryLabel" style="color: #000;">All Orders</strong>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Category Filtering Tabs & Search Controls -->
+                <div class="orders-filter-container" style="padding: 16px 24px; border-bottom: 1px solid var(--border); background: #ffffff;">
+                    
+                    <!-- Search Input -->
+                    <div class="orders-search-box" style="flex: 1; min-width: 260px;">
+                        <span style="color: #94a3b8;">🔍</span>
+                        <input type="text" id="orderSearchInput" placeholder="Search by Order ID, Customer, Phone, Address..." data-i18n-placeholder="searchPlaceholder" oninput="handleOrderSearch()">
+                    </div>
+
+                    <!-- Category Access Pills -->
+                    <div class="filter-pills-row" id="adminCategoryPills">
+                        <button type="button" class="category-tab-btn active" data-cat="all" onclick="selectCategoryFilter('all')">
+                            <span data-i18n="filterCategoryAll">All Orders</span>
+                            <span class="category-tab-badge" id="pillCountAll">0</span>
+                        </button>
+                        <button type="button" class="category-tab-btn" data-cat="waiting" onclick="selectCategoryFilter('waiting')">
+                            <span data-i18n="filterCategoryWaiting">Waiting for confirmation</span>
+                            <span class="category-tab-badge" id="pillCountWaiting">0</span>
+                        </button>
+                        <button type="button" class="category-tab-btn" data-cat="confirmed" onclick="selectCategoryFilter('confirmed')">
+                            <span data-i18n="filterCategoryConfirmed">Confirmed</span>
+                            <span class="category-tab-badge" id="pillCountConfirmed">0</span>
+                        </button>
+                        <button type="button" class="category-tab-btn" data-cat="delivered" onclick="selectCategoryFilter('delivered')">
+                            <span data-i18n="filterCategoryDelivered">Delivered</span>
+                            <span class="category-tab-badge" id="pillCountDelivered">0</span>
+                        </button>
+                        <button type="button" class="category-tab-btn" data-cat="cancelled" onclick="selectCategoryFilter('cancelled')">
+                            <span data-i18n="filterCategoryCancelled">Cancelled</span>
+                            <span class="category-tab-badge" id="pillCountCancelled">0</span>
+                        </button>
+                    </div>
+
+                    <!-- Delivery Destination Filter (To House / To Desk) -->
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <span style="font-size: 12px; color: var(--accent); font-weight: 600;" data-i18n="thDeliveryOption">Delivery:</span>
+                        <select id="deliveryOptionFilterSelect" onchange="handleDeliveryOptionFilter()" style="padding: 6px 12px; border: 1px solid var(--border); font-size: 12px; background: #fff; outline: none; border-radius: 4px;">
+                            <option value="all" data-i18n="filterAllDestinations">All Destinations</option>
+                            <option value="house" data-i18n="delivery_house">To House</option>
+                            <option value="desk" data-i18n="delivery_desk">To Desk</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Orders Table -->
+                <div class="d1-table-wrapper" style="margin-bottom: 0; border: none;">
+                    <table class="d1-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="thOrderId">Order ID</th>
+                                <th data-i18n="thDate">Date &amp; Time</th>
+                                <th data-i18n="thCustomer">Customer &amp; Contact</th>
+                                <th data-i18n="thDeliveryOption">Delivery Option</th>
+                                <th data-i18n="thDeliveryDetails">Delivery Details / Location</th>
+                                <th data-i18n="thItemsTotal">Items &amp; Total</th>
+                                <th data-i18n="thStatus">Current Status</th>
+                                <th style="text-align: right;" data-i18n="thActions">Set Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 30px; color: var(--accent);" data-i18n="loadingOrders">Loading orders...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Product Catalog Management Section -->
+            <div class="dashboard-section" style="background: #ffffff; border: 1px solid var(--border); padding: 24px; margin-bottom: 40px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h2 style="font-size: 18px; font-weight: 600; margin: 0;" data-i18n="productManagementTitle">Product Catalog Management</h2>
+                            <span class="d1-badge-chip" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-size: 11px; padding: 2px 8px;" data-i18n="r2BadgeLabel">Cloudflare R2 Storage</span>
+                        </div>
+                        <p style="font-size: 13px; color: var(--accent); margin: 4px 0 0;" data-i18n="r2UploadDesc">Add apparel to the buyer collection. Pick a picture from your gallery to upload it straight to Cloudflare R2, generating and auto-pasting the link.</p>
+                    </div>
+                </div>
+
+                <!-- Cloudflare R2 Gallery Picture Uploader Component -->
+                <div class="r2-upload-wrapper" id="r2UploadWrapper" style="margin-bottom: 24px;">
+                    <input type="file" id="productImageFileInput" accept="image/*" style="display: none;">
+                    
+                    <div class="r2-dropzone" id="r2Dropzone" onclick="triggerGalleryFilePick()">
+                        <div class="r2-dropzone-inner" id="r2DropzonePrompt">
+                            <div class="r2-dropzone-icon">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path>
+                                    <line x1="16" y1="5" x2="22" y2="5"></line>
+                                    <line x1="19" y1="2" x2="19" y2="8"></line>
+                                    <circle cx="9" cy="9" r="2"></circle>
+                                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                                </svg>
+                            </div>
+                            <div class="r2-dropzone-text">
+                                <span class="r2-title" data-i18n="r2UploadTitle">Add Picture from Gallery (Cloudflare R2)</span>
+                                <span class="r2-subtitle" data-i18n="r2DragDropHint">or drag &amp; drop photo here (Mobile Gallery &amp; Desktop supported)</span>
+                            </div>
+                            <button type="button" class="btn r2-btn-pick" id="r2PickBtn" onclick="event.stopPropagation(); triggerGalleryFilePick()" data-i18n="r2PickFromGalleryBtn">
+                                🖼️ Choose from Gallery
+                            </button>
+                        </div>
+
+                        <!-- Uploading State (Hidden by default) -->
+                        <div class="r2-upload-state" id="r2UploadLoading" style="display: none;">
+                            <div class="r2-spinner"></div>
+                            <div style="font-size: 14px; font-weight: 500;" data-i18n="r2Uploading">Uploading picture to Cloudflare R2...</div>
+                            <div style="font-size: 12px; color: #64748b;">Storing image file and generating public link</div>
+                        </div>
+
+                        <!-- Uploaded Success State (Hidden by default) -->
+                        <div class="r2-upload-success" id="r2UploadSuccessBox" style="display: none;">
+                            <div class="r2-preview-thumb-container">
+                                <img id="r2PreviewThumb" src="" alt="Uploaded picture preview">
+                            </div>
+                            <div class="r2-success-details">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <span class="r2-status-pill success" id="r2StatusPill">✓ Cloudflare R2 Stored</span>
+                                    <span id="r2UploadFileName" style="font-size: 12px; color: #475569; font-weight: 500;"></span>
+                                </div>
+                                <div style="font-size: 13px; color: #166534; font-weight: 600;" data-i18n="r2UploadSuccess">
+                                    ✓ Picture stored in Cloudflare R2! Link automatically pasted below.
+                                </div>
+                                <div style="font-size: 11px; color: #64748b; margin-top: 2px;" id="r2UploadMeta"></div>
+                            </div>
+                            <button type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 12px; margin-left: auto;" onclick="event.stopPropagation(); triggerGalleryFilePick()" data-i18n="r2ChangePicBtn">
+                                🔄 Change Photo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Form -->
+                <form id="productForm" class="form" style="max-width: 100%;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label for="productName" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px;" data-i18n="addProductName">Product Name *</label>
+                            <input type="text" placeholder="Product Name (e.g. Vintage Oversized Hoodie)" id="productName" required>
+                        </div>
+                        <div>
+                            <label for="productPrice" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px;" data-i18n="addProductPrice">Price ($) *</label>
+                            <input type="number" placeholder="Price" id="productPrice" step="0.01" required>
+                        </div>
+                        <div>
+                            <label for="productCategory" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px;" data-i18n="addProductCategory">Category *</label>
+                            <select id="productCategory" style="width: 100%; padding: 12px; border: 1px solid var(--border); font-size: 14px; background: #fff; border-radius: 4px;">
+                                <option value="shirts">T-Shirts</option>
+                                <option value="hoodies">Hoodies</option>
+                                <option value="bottoms">Bottoms</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Auto-Pasted Image URL Row with Live Preview -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <label for="productImage" style="font-size: 12px; font-weight: 600;" data-i18n="addProductImage">Product Image Link *</label>
+                            <span id="r2AutoPastedIndicator" style="display: none; font-size: 11px; font-weight: 600; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 12px;">
+                                ✓ Auto-pasted from Cloudflare R2
+                            </span>
+                        </div>
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <div style="flex: 1; position: relative;">
+                                <input type="text" placeholder="Image URL (Auto-pasted from Cloudflare R2 or enter custom link)" id="productImage" value="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80" required style="width: 100%; padding-right: 36px; transition: border-color 0.3s, box-shadow 0.3s;">
+                                <button type="button" id="btnCopyProductLink" onclick="copyProductImageLink()" title="Copy Link" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 14px; color: #64748b; padding: 4px;">
+                                    📋
+                                </button>
+                            </div>
+                            <div class="product-input-thumb-preview" id="productInputThumbBox" title="Product Image Preview">
+                                <img id="productImageLivePreview" src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80" alt="Preview">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <button type="submit" class="btn" id="btnAddProductSubmit" style="padding: 12px 28px; font-size: 14px;" data-i18n="addProductBtn">
+                            + Add Product to Store
+                        </button>
+                        <span style="font-size: 12px; color: #64748b;">
+                            ⚡ Images uploaded from gallery are permanently stored in Cloudflare R2.
+                        </span>
+                    </div>
+                </form>
+
+                <!-- Current Catalog Products Table -->
+                <div style="margin-top: 32px; border-top: 1px solid var(--border); padding-top: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3 style="font-size: 16px; font-weight: 600;" data-i18n="catalogTitle">Store Products Catalog</h3>
+                            <p style="font-size: 12px; color: #64748b;" data-i18n="catalogSubtitle">Manage active items displayed in your customer storefront.</p>
+                        </div>
+                        <button type="button" class="btn-secondary" onclick="loadStoreProductsTable()" style="padding: 6px 14px; font-size: 12px;" data-i18n="refreshCatalogBtn">
+                            🔄 Refresh Products
+                        </button>
+                    </div>
+                    <div class="orders-table-wrapper">
+                        <table class="orders-table" id="adminProductsTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px;">Image</th>
+                                    <th>Product</th>
+                                    <th>Category</th>
+                                    <th>Price</th>
+                                    <th style="text-align: right;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminProductsList">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 24px; color: #94a3b8;">Loading catalog products...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Create New Order Modal (For Admin) -->
+    <div id="createOrderModal" class="modal-overlay" style="display: none;">
+        <div class="modal-dialog" style="max-width: 540px;">
+            <button class="modal-close-btn" onclick="closeCreateOrderModal()">&times;</button>
+            <div style="margin-bottom: 18px;">
+                <span class="d1-badge-chip" data-i18n="adminManualEntry">Admin Manual Entry</span>
+                <h2 style="font-size: 20px; font-weight: 600; margin-top: 6px;" data-i18n="newOrderModalTitle">Create New Customer Order</h2>
+                <p style="font-size: 13px; color: var(--accent);" data-i18n="newOrderModalDesc">Add a new customer order with delivery option (To House or To Desk).</p>
+            </div>
+
+            <form id="adminNewOrderForm" onsubmit="handleAdminCreateOrderSubmit(event)">
+                <div style="margin-bottom: 14px;">
+                    <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;" data-i18n="custNameLabel">Customer Full Name *</label>
+                    <input type="text" id="modalCustomerName" placeholder="e.g. John Doe" data-i18n-placeholder="custNamePlaceholder" required style="width: 100%;">
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;" data-i18n="custPhoneLabel">Phone Number *</label>
+                    <input type="tel" id="modalCustomerPhone" placeholder="e.g. +1 555-0192" data-i18n-placeholder="custPhonePlaceholder" required style="width: 100%;">
+                </div>
+
+                <!-- Delivery Option (House or Desk) -->
+                <div style="margin-bottom: 14px;">
+                    <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;" data-i18n="deliveryOptionLabel">Delivery Option (Choose One) *</label>
+                    <div class="delivery-options-grid">
+                        <label class="delivery-option-card active" id="modalOptHouseCard" onclick="selectModalDeliveryOption('house')">
+                            <input type="radio" name="modalDeliveryOption" value="house" checked style="display: none;">
+                            <div class="delivery-option-title" data-i18n="optHouse">🏠 To House</div>
+                            <div class="delivery-option-desc" data-i18n="optHouseDesc">Direct delivery to residential address</div>
+                        </label>
+                        <label class="delivery-option-card" id="modalOptDeskCard" onclick="selectModalDeliveryOption('desk')">
+                            <input type="radio" name="modalDeliveryOption" value="desk" style="display: none;">
+                            <div class="delivery-option-title" data-i18n="optDesk">🏢 To Desk</div>
+                            <div class="delivery-option-desc" data-i18n="optDeskDesc">Direct delivery to workplace desk or office</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Delivery Details -->
+                <div style="margin-bottom: 14px;">
+                    <label id="modalDetailsLabel" style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;" data-i18n="detailsHouseLabel">Home Address (Street, Apt, City) *</label>
+                    <textarea id="modalDeliveryDetails" rows="2" placeholder="e.g. 742 Evergreen Terrace, Apt 4B, Springfield" data-i18n-placeholder="detailsHousePlaceholder" required style="width: 100%; padding: 10px; border: 1px solid var(--border); font-size: 13px;"></textarea>
+                </div>
+
+                <!-- Product Selection -->
+                <div style="margin-bottom: 18px;">
+                    <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;" data-i18n="orderItemsSummary">Order Item</label>
+                    <select id="modalProductSelect" style="width: 100%; padding: 10px; border: 1px solid var(--border); font-size: 13px; background: #fff;">
+                        <option value="1|Classic White T-Shirt|29.99">Classic White T-Shirt ($29.99)</option>
+                        <option value="2|Black Minimalist Hoodie|79.99">Black Minimalist Hoodie ($79.99)</option>
+                        <option value="3|Gray Slim Joggers|59.99">Gray Slim Joggers ($59.99)</option>
+                        <option value="5|Cream Heavyweight Hoodie|84.99">Cream Heavyweight Hoodie ($84.99)</option>
+                        <option value="6|Relaxed Fit Denim Jeans|89.99">Relaxed Fit Denim Jeans ($89.99)</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateOrderModal()" data-i18n="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn" id="modalSubmitOrderBtn" data-i18n="placeOrderBtn">Create Order &rarr;</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 440px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="font-size: 18px; font-weight: 600; margin: 0;" data-i18n="changePassword">Change Admin Password</h3>
+                <button onclick="closeChangePasswordModal()" style="background: transparent; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+            <form id="changePasswordForm" onsubmit="handleChangePasswordSubmit(event)">
+                <div style="margin-bottom: 14px;">
+                    <label style="font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;" data-i18n="currentPassword">Current Password</label>
+                    <input type="password" id="currentAdminPwdInput" required style="width: 100%; padding: 10px; border: 1px solid var(--border); font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 14px;">
+                    <label style="font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;" data-i18n="newPassword">New Password (min 4 characters)</label>
+                    <input type="password" id="newAdminPwdInput" required minlength="4" style="width: 100%; padding: 10px; border: 1px solid var(--border); font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 18px;">
+                    <label style="font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;" data-i18n="confirmPassword">Confirm New Password</label>
+                    <input type="password" id="confirmAdminPwdInput" required minlength="4" style="width: 100%; padding: 10px; border: 1px solid var(--border); font-size: 14px;">
+                </div>
+                <div id="pwdChangeError" class="admin-auth-error" style="display: none; margin-bottom: 15px;"></div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeChangePasswordModal()" data-i18n="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn" data-i18n="updatePasswordBtn">Update Password &rarr;</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- In-App Toast Notification -->
+    <div id="toastNotification" class="d1-toast" style="display: none;"></div>
+
+    <footer id="adminFooter" style="background: #ffffff; border-top: 1px solid var(--border); padding: 30px 0; margin-top: 40px;">
+        <div class="container" style="text-align: center; color: var(--accent); font-size: 13px;">
+            <p data-i18n="allRightsReserved">&copy; 2026 Brand Clothing Store. All rights reserved.</p>
         </div>
     </footer>
 
+    <!-- i18n Translation Engine (English, Arabic RTL, French) -->
+    <script src="js/i18n.js"></script>
+    <script src="js/storage-engine.js"></script>
     <script src="js/dashboard.js"></script>
 </body>
 </html>

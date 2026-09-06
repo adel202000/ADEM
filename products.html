@@ -3,45 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Products - Brand</title>
+    <title>Shop Apparel - Brand Clothing Store</title>
+    <meta name="description" content="Minimal clothing collection featuring timeless apparel essentials with direct Home or Stop Desk delivery.">
+    <meta property="og:title" content="Shop Apparel - Brand Clothing Store">
+    <meta property="og:description" content="Minimal clothing collection featuring timeless apparel essentials with direct Home or Stop Desk delivery.">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <nav class="navbar">
+    <!-- Top Announcement Bar (Animated & Translatable) -->
+    <div class="shop-announcement-bar" id="shopAnnouncementBar">
+        <div class="container announcement-inner">
+            <span class="announcement-pulse-dot" aria-hidden="true"></span>
+            <span class="announcement-text" data-i18n="announcementBanner">✨ Free express shipping on orders over $100 • Direct to Home 🏠 or Stop Desk 🏢</span>
+            <div class="announcement-badges">
+                <span class="announcement-chip" data-i18n="badgeDeliveryOptions">Home & Stop Desk</span>
+            </div>
+        </div>
+    </div>
+
+    <nav class="navbar" id="shopNavbar">
         <div class="container">
-            <div class="logo">BRAND</div>
+            <div class="logo" data-i18n="brandName">BRAND</div>
             <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="products.html">Shop</a></li>
-                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="index.html" id="shopNavHome" data-i18n="navHome">Home</a></li>
+                <li><a href="products.html" id="shopNavShop" style="font-weight: 600;" data-i18n="navShop">Shop</a></li>
+                <li><a href="dashboard.html" id="shopNavDashboard" data-i18n="navAdmin">Admin</a></li>
+                <li id="shopNavD1Container" style="display: none;">
+                    <a href="d1-dashboard.html" class="nav-pill-d1" id="shopNavD1">
+                        <span class="dot"></span> 🔒 D1 Orders
+                    </a>
+                </li>
+                <li id="shopLangSwitcherContainer"></li>
             </ul>
         </div>
     </nav>
 
-    <section class="products-section">
+    <section class="products-section" id="productsSection">
         <div class="container">
-            <h1>All Products</h1>
-            
-            <div class="filters">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="shirts">T-Shirts</button>
-                <button class="filter-btn" data-filter="hoodies">Hoodies</button>
-                <button class="filter-btn" data-filter="bottoms">Bottoms</button>
+            <!-- Luxury Header -->
+            <div class="shop-hero-header">
+                <div class="shop-hero-meta">
+                    <span class="luxury-badge-pill" data-i18n="collectionBadge">Autumn / Winter Minimal Collection</span>
+                    <h1 class="shop-main-title" data-i18n="collectionTitle">Apparel Collection</h1>
+                    <p class="shop-subtitle" data-i18n="collectionSubtitle">Timeless apparel crafted with premium heavyweight cotton and minimalist cuts.</p>
+                </div>
+                
+                <!-- Floating / Responsive Cart Pill -->
+                <div id="cartBar" class="cart-bar-pill">
+                    <div class="cart-bar-icon-wrap" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                        <span id="cartCountNumber" class="cart-bubble-count">0</span>
+                    </div>
+                    <div class="cart-bar-details">
+                        <span class="cart-bar-label"><span data-i18n="cartLabel">Cart:</span> <strong id="cartCountBadge">0 items</strong></span>
+                        <span class="cart-bar-subtotal" id="cartSubtotalBadge">$0.00</span>
+                    </div>
+                    <button class="btn btn-cart-checkout" id="openCartBtn" onclick="openCheckoutModal()">
+                        <span data-i18n="cartCheckoutBtn">Checkout</span> &rarr;
+                    </button>
+                </div>
             </div>
 
+            <!-- Free Delivery Progress Meter -->
+            <div id="freeShippingBanner" class="free-shipping-card">
+                <div class="free-shipping-info">
+                    <span id="freeShippingText">✨ Add $100.00 more for FREE express delivery!</span>
+                    <span class="free-shipping-dest" data-i18n="deliveryNoticeModal">Choice of direct Home delivery or Stop Desk agency pickup.</span>
+                </div>
+                <div class="free-shipping-progress-bg">
+                    <div id="freeShippingProgressBar" class="free-shipping-progress-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Interactive Filters & Search Controls Bar -->
+            <div class="shop-controls-bar">
+                <div class="filters" id="shopFiltersGroup">
+                    <button class="filter-btn active" data-filter="all">
+                        <span data-i18n="filterAll">All</span>
+                        <span class="filter-count-badge" id="countAll">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="shirts">
+                        <span data-i18n="filterShirts">T-Shirts</span>
+                        <span class="filter-count-badge" id="countShirts">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="hoodies">
+                        <span data-i18n="filterHoodies">Hoodies</span>
+                        <span class="filter-count-badge" id="countHoodies">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="bottoms">
+                        <span data-i18n="filterBottoms">Bottoms</span>
+                        <span class="filter-count-badge" id="countBottoms">0</span>
+                    </button>
+                </div>
+
+                <div class="shop-search-sort-group">
+                    <div class="shop-search-box">
+                        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="shopSearchInput" class="shop-search-input" placeholder="Search apparel by name or style..." data-i18n-placeholder="searchPlaceholder" />
+                        <button type="button" id="clearSearchBtn" class="search-clear-btn" style="display: none;" onclick="clearSearch()" aria-label="Clear search">&times;</button>
+                    </div>
+                    <div class="shop-sort-box">
+                        <label for="shopSortSelect" class="sort-label" data-i18n="sortLabel">Sort by:</label>
+                        <select id="shopSortSelect" class="shop-sort-select">
+                            <option value="default" data-i18n="sortDefault">Featured</option>
+                            <option value="price-asc" data-i18n="sortPriceAsc">Price: Low to High</option>
+                            <option value="price-desc" data-i18n="sortPriceDesc">Price: High to Low</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Grid -->
             <div class="products-grid" id="productsGrid">
-                <!-- Products will be loaded from R2 via JavaScript -->
-                <div class="loading">Loading products...</div>
+                <div class="loading">Loading products from catalog...</div>
             </div>
         </div>
     </section>
 
+    <!-- Quick View Modal -->
+    <div id="quickViewModal" class="modal-overlay" style="display: none;">
+        <div class="modal-dialog quick-view-modal-card">
+            <button class="modal-close-btn" onclick="closeQuickViewModal()" aria-label="Close modal">&times;</button>
+            <div class="quick-view-grid">
+                <div class="quick-view-image-wrap">
+                    <div id="qvImage" class="quick-view-img"></div>
+                    <div class="quick-view-badges">
+                        <span class="qv-badge" data-i18n="badgeHeavyweight">Heavyweight 280 GSM</span>
+                        <span class="qv-badge qv-badge-delivery" data-i18n="badgeDeliveryOptions">Home & Stop Desk</span>
+                    </div>
+                </div>
+                <div class="quick-view-details">
+                    <span id="qvCategory" class="product-category"></span>
+                    <h2 id="qvTitle" class="quick-view-title"></h2>
+                    <div id="qvPrice" class="quick-view-price"></div>
+                    <p id="qvDescription" class="quick-view-desc"></p>
+                    
+                    <div class="qv-sizes-section">
+                        <label class="qv-label" data-i18n="selectSizeLabel">Select Size:</label>
+                        <div class="qv-size-selector">
+                            <button type="button" class="qv-size-pill active" onclick="selectSize(this, 'S')">S</button>
+                            <button type="button" class="qv-size-pill" onclick="selectSize(this, 'M')">M</button>
+                            <button type="button" class="qv-size-pill" onclick="selectSize(this, 'L')">L</button>
+                            <button type="button" class="qv-size-pill" onclick="selectSize(this, 'XL')">XL</button>
+                        </div>
+                    </div>
+
+                    <div class="qv-delivery-box">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                        <span data-i18n="deliveryNoticeModal">Choice of direct Home delivery or Stop Desk agency pickup at checkout.</span>
+                    </div>
+
+                    <div class="qv-actions">
+                        <button id="qvAddToCartBtn" class="btn btn-add-cart" onclick="qvAddToCart()"><span data-i18n="addToCart">Add to Cart</span></button>
+                        <button id="qvBuyNowBtn" class="btn btn-secondary btn-quick-buy" onclick="qvBuyNow()"><span data-i18n="buyNow">Buy Now</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal for placing verified order -->
+    <div id="checkoutModal" class="modal-overlay" style="display: none;">
+        <div class="modal-dialog checkout-modal-card">
+            <button class="modal-close-btn" onclick="closeCheckoutModal()" aria-label="Close modal">&times;</button>
+            <div style="margin-bottom: 20px;">
+                <span class="d1-badge-chip">Direct Checkout</span>
+                <h2 style="font-size: 22px; font-weight: 600; margin-top: 8px;" data-i18n="checkoutTitle">Complete Order Checkout</h2>
+                <p style="font-size: 13px; color: var(--accent);" data-i18n="checkoutSubtitle">Enter your contact details and select your preferred delivery destination.</p>
+            </div>
+
+            <div id="checkoutItemsList" style="margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                <!-- Filled dynamically -->
+            </div>
+
+            <form id="checkoutForm" class="form" style="max-width: 100%;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;" data-i18n="custNameLabel">Customer Full Name *</label>
+                        <input type="text" id="custName" placeholder="e.g. Maya Lin" data-i18n-placeholder="custNamePlaceholder" required style="width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;" data-i18n="custPhoneLabel">Phone Number *</label>
+                        <input type="tel" id="custPhone" placeholder="e.g. +1 555-0192" data-i18n-placeholder="custPhonePlaceholder" required style="width: 100%;">
+                    </div>
+                </div>
+
+                <!-- ONLY 2 DELIVERY OPTIONS: To Home OR To Stop Desk (NO CARRIER / COMPANY CHOICE) -->
+                <div style="margin-top: 14px;">
+                    <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 8px;" data-i18n="deliveryOptionLabel">Delivery Option (Choose One)</label>
+                    <div class="delivery-options-grid">
+                        <div class="delivery-option-card selected" id="optCardHouse" onclick="selectCheckoutDelivery('house')" role="button" tabindex="0">
+                            <div class="delivery-option-header">
+                                <span class="delivery-radio-circle"></span>
+                                <span style="font-size: 18px;">🏠</span>
+                                <span class="delivery-title" data-i18n="optHouse">To Home</span>
+                            </div>
+                            <div class="delivery-option-desc" data-i18n="optHouseDesc">Direct delivery to your residential home address</div>
+                        </div>
+
+                        <div class="delivery-option-card" id="optCardDesk" onclick="selectCheckoutDelivery('desk')" role="button" tabindex="0">
+                            <div class="delivery-option-header">
+                                <span class="delivery-radio-circle"></span>
+                                <span style="font-size: 18px;">🏢</span>
+                                <span class="delivery-title" data-i18n="optDesk">To Stop Desk</span>
+                            </div>
+                            <div class="delivery-option-desc" data-i18n="optDeskDesc">Direct pickup at Stop Desk agency or desk location</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 10px;">
+                    <label id="deliveryDetailsLabel" style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;" data-i18n="detailsHouseLabel">Home Address (Street, House/Apt, City) *</label>
+                    <textarea id="custDeliveryDetails" rows="2" placeholder="e.g. 742 Evergreen Terrace, Apt 4B, Springfield" data-i18n-placeholder="detailsHousePlaceholder" required style="width: 100%; resize: vertical;"></textarea>
+                </div>
+
+                <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid var(--border);">
+                    <div style="font-size: 16px; font-weight: 700;">
+                        <span data-i18n="total">Total:</span> <span id="checkoutTotalVal">$0.00</span>
+                    </div>
+                    <button type="submit" class="btn btn-checkout-submit" id="submitOrderBtn">
+                        <span data-i18n="placeOrderBtn">Place Order</span> &rarr;
+                    </button>
+                </div>
+            </form>
+
+            <div id="checkoutSuccessNotice" style="display: none; margin-top: 20px; padding: 20px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px;">
+                <h3 style="color: #166534; font-size: 16px; margin-bottom: 6px;" data-i18n="orderPlacedSuccess">Order Placed Successfully!</h3>
+                <p style="font-size: 13px; color: #166534; margin-bottom: 8px;" data-i18n="orderPlacedDesc">Your order has been recorded and submitted for fulfillment.</p>
+                <div style="background: #ffffff; border: 1px solid #bbf7d0; padding: 12px; border-radius: 6px; margin-bottom: 14px; font-size: 13px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="color: #64748b;" data-i18n="orderIdLabel">Order ID:</span>
+                        <strong id="createdTrackingCode" style="font-family: monospace;"></strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="color: #64748b;" data-i18n="deliveryChoiceLabel">Delivery Destination:</span>
+                        <strong id="createdDeliveryType"></strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #64748b;" data-i18n="statusLabel">Status:</span>
+                        <span class="status-pill status-waiting" data-i18n="status_waiting">Waiting for confirmation</span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <a id="trackInD1Btn" href="dashboard.html" class="btn" style="font-size: 12px; padding: 8px 18px;" data-i18n="goToAdminBtn">View in Admin &rarr;</a>
+                    <button class="btn btn-secondary" onclick="closeCheckoutModal()" style="font-size: 12px; padding: 8px 18px; margin: 0;" data-i18n="continueShoppingBtn">Continue Shopping</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="d1-toast" style="display: none;"></div>
+
     <footer>
         <div class="container">
-            <p>&copy; 2025 Brand. All rights reserved.</p>
+            <p data-i18n="allRightsReserved">&copy; 2026 Brand Clothing Store. All rights reserved.</p>
         </div>
     </footer>
 
+    <!-- Universal Storage, i18n & Products Logic -->
+    <script src="js/storage-engine.js"></script>
+    <script src="js/i18n.js"></script>
     <script src="js/products.js"></script>
 </body>
 </html>
+
