@@ -754,6 +754,10 @@ async function loadStoreProductsTable() {
 
         tbody.innerHTML = products.map(p => {
             const isR2 = p.image && (p.image.includes('/uploads') || p.image.includes('/api/r2') || p.image.includes('r2.cloudflarestorage') || p.image.includes('r2.dev'));
+            const isGallery = p.image && p.image.startsWith('data:image');
+            const badgeHtml = isR2 ? '<span style="color:#16a34a; font-weight:600;">☁️ Cloudflare R2</span>' :
+                             isGallery ? '<span style="color:#2563eb; font-weight:600;">🖼️ Gallery Upload</span>' :
+                             '<span style="color:#64748b;">Image URL</span>';
             return `
                 <tr>
                     <td>
@@ -764,7 +768,7 @@ async function loadStoreProductsTable() {
                     <td style="font-weight: 500; font-size: 13px;">
                         <div>${escapeHtml(p.name)}</div>
                         <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
-                            ID: #${p.id} • ${isR2 ? '<span style="color:#16a34a; font-weight:600;">☁️ Cloudflare R2</span>' : '<span style="color:#64748b;">Image URL</span>'}
+                            ID: #${p.id} • ${badgeHtml}
                         </div>
                     </td>
                     <td>
@@ -776,8 +780,8 @@ async function loadStoreProductsTable() {
                         $${parseFloat(p.price).toFixed(2)}
                     </td>
                     <td style="text-align: right;">
-                        <button type="button" class="btn-secondary" onclick="deleteStoreProduct(${p.id}, '${escapeHtml(p.name).replace(/'/g, "\\'")}')" 
-                                style="padding: 5px 10px; font-size: 11px; color: #dc2626; border-color: #fecaca; background: #fef2f2;">
+                        <button type="button" class="btn-secondary" onclick="deleteStoreProduct(${p.id})" 
+                                style="padding: 5px 10px; font-size: 11px; color: #dc2626; border-color: #fecaca; background: #fef2f2; cursor: pointer;">
                             🗑️ Delete
                         </button>
                     </td>
@@ -791,7 +795,10 @@ async function loadStoreProductsTable() {
 }
 
 // Delete product from store catalog
-async function deleteStoreProduct(id, name) {
+async function deleteStoreProduct(id, optionalName) {
+    const products = await window.StoreBackend.getProducts();
+    const prod = (products || []).find(p => Number(p.id) === Number(id));
+    const name = optionalName || prod?.name || ('Product #' + id);
     if (!confirm(`Are you sure you want to remove "${name}" from the store catalog?`)) {
         return;
     }

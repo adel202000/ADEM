@@ -19,7 +19,7 @@
         STATUS: 'brand_d1_status'
     };
 
-    const DEFAULT_ADMIN_PASSWORD = 'admin123';
+    const DEFAULT_ADMIN_PASSWORD = 'ADEL2026';
 
     // Default Seed Products
     const DEFAULT_PRODUCTS = [
@@ -141,7 +141,14 @@
             if (typeof window === 'undefined') return false;
             const host = window.location.hostname || '';
             const proto = window.location.protocol || '';
-            return host.includes('github.io') || proto === 'file:' || host.includes('localhost:5000');
+            return host.includes('github.io') || 
+                   host.includes('github.dev') ||
+                   host.includes('pages.dev') ||
+                   host.includes('vercel.app') ||
+                   host.includes('netlify.app') ||
+                   proto === 'file:' || 
+                   host.includes('localhost:5000') ||
+                   window.IS_STATIC_DEPLOYMENT === true;
         }
 
         // Initialize seed data in LocalStorage if not present
@@ -199,14 +206,19 @@
                     const data = await res.json();
                     return data.authenticated === true;
                 }
-                // Token expired or invalid
+                if (res.status === 404 || res.status === 405) {
+                    this.isStaticMode = true;
+                    return token.startsWith('client_adm_') || token.startsWith('adm_');
+                }
+                // Token expired or invalid on live backend
                 if (res.status === 401) {
                     this.setToken(null);
                     return false;
                 }
                 return false;
             } catch (err) {
-                // Network glitch or offline
+                // Network glitch or offline / GitHub Pages
+                this.isStaticMode = true;
                 return Boolean(token);
             }
         }
@@ -232,15 +244,18 @@
                         return { success: true, token: data.token };
                     } else if (res.status === 401) {
                         return { success: false, error: 'Incorrect admin password' };
+                    } else if (res.status === 404 || res.status === 405) {
+                        this.isStaticMode = true;
                     }
                 } catch (err) {
-                    console.warn('Backend login connection error:', err.message);
+                    this.isStaticMode = true;
+                    console.warn('Backend login connection error, falling back to local auth:', err.message);
                 }
             }
 
             // LocalStorage / Static Mode Validation
             const savedPassword = localStorage.getItem(STORAGE_KEYS.PASSWORD) || DEFAULT_ADMIN_PASSWORD;
-            if (password === savedPassword || password === 'admin123') {
+            if (password === savedPassword || password === 'ADEL2026' || password === 'admin123') {
                 const clientToken = 'adm_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
                 this.setToken(clientToken, remember);
                 return { success: true, token: clientToken, mode: 'local' };
@@ -314,8 +329,12 @@
                     const res = await fetch('/api/products');
                     if (res.ok) {
                         const data = await res.json();
-                        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(data));
-                        return data;
+                        if (Array.isArray(data)) {
+                            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(data));
+                            return data;
+                        }
+                    } else if (res.status === 404 || res.status === 405) {
+                        this.isStaticMode = true;
                     }
                 } catch (e) {
                     this.isStaticMode = true;
@@ -324,7 +343,14 @@
 
             try {
                 const stored = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-                return stored ? JSON.parse(stored) : DEFAULT_PRODUCTS;
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        return parsed;
+                    }
+                }
+                localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(DEFAULT_PRODUCTS));
+                return DEFAULT_PRODUCTS;
             } catch (e) {
                 return DEFAULT_PRODUCTS;
             }
@@ -332,7 +358,9 @@
 
         async addProduct(product) {
             const token = this.getToken();
-            if (token) {
+            
+            // Try backend if live server is reachable
+            if (!this.isStaticMode && token) {
                 try {
                     const res = await fetch('/api/products/add', {
                         method: 'POST',
@@ -344,39 +372,48 @@
                     });
                     if (res.ok) {
                         const data = await res.json();
-                        // Update cache
                         await this.getProducts();
                         return data;
+                    } else if (res.status === 404 || res.status === 405) {
+                        // GitHub Pages / Static hosting fallback
+                        this.isStaticMode = true;
                     } else {
                         const err = await res.json().catch(() => ({}));
                         return { success: false, error: err.error || 'Failed to add product to catalog' };
                     }
                 } catch (e) {
-                    console.warn('API add product network warning:', e.message);
+                    this.isStaticMode = true;
+                    console.warn('API add product network warning, switching to local:', e.message);
                 }
             }
 
-            // Local fallback
-            const prods = await this.getProducts();
-            const newId = prods.length > 0 ? Math.max(...prods.map(p => p.id)) + 1 : 1;
-            const newProd = {
-                id: newId,
-                name: product.name,
-                category: product.category || 'apparel',
-                price: parseFloat(product.price),
-                image: product.image || DEFAULT_PRODUCTS[0].image,
-                stock: 50
-            };
-            prods.push(newProd);
-            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(prods));
-            return { success: true, message: 'Product added successfully', id: newId, product: newProd };
+            // Local fallback (GitHub Pages, static hosting, or offline)
+            try {
+                const prods = await this.getProducts();
+                const newId = prods.length > 0 ? Math.max(...prods.map(p => Number(p.id) || 0)) + 1 : 1;
+                const newProd = {
+                    id: newId,
+                    name: product.name,
+                    category: product.category || 'shirts',
+                    price: parseFloat(product.price) || 0,
+                    image: product.image || DEFAULT_PRODUCTS[0].image,
+                    stock: product.stock ? parseInt(product.stock, 10) : 50,
+                    created_at: new Date().toISOString()
+                };
+                prods.unshift(newProd);
+                localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(prods));
+                return { success: true, message: 'Product added successfully', id: newId, product: newProd };
+            } catch (err) {
+                return { success: false, error: 'Could not save product locally: ' + err.message };
+            }
         }
 
         // Delete product from store catalog
         async deleteProduct(id) {
             const numId = parseInt(id, 10);
             const token = this.getToken();
-            if (token) {
+            
+            if (!this.isStaticMode && token) {
                 try {
                     const res = await fetch(`/api/products/${numId}`, {
                         method: 'DELETE',
@@ -385,23 +422,31 @@
                     if (res.ok) {
                         const data = await res.json();
                         let prods = await this.getProducts();
-                        prods = prods.filter(p => p.id !== numId);
+                        prods = prods.filter(p => Number(p.id) !== numId);
                         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(prods));
                         return data;
+                    } else if (res.status === 404 || res.status === 405) {
+                        // GitHub Pages / Static hosting fallback
+                        this.isStaticMode = true;
                     } else {
                         const err = await res.json().catch(() => ({}));
                         return { success: false, error: err.error || 'Failed to delete product' };
                     }
                 } catch (e) {
-                    console.warn('API delete product warning:', e.message);
+                    this.isStaticMode = true;
+                    console.warn('API delete product warning, switching to local:', e.message);
                 }
             }
 
-            // Local fallback
-            let prods = await this.getProducts();
-            prods = prods.filter(p => p.id !== numId);
-            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(prods));
-            return { success: true, message: 'Product deleted successfully' };
+            // Local fallback (GitHub Pages, static hosting, or offline)
+            try {
+                let prods = await this.getProducts();
+                prods = prods.filter(p => Number(p.id) !== numId);
+                localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(prods));
+                return { success: true, message: 'Product deleted successfully', id: numId };
+            } catch (err) {
+                return { success: false, error: 'Could not delete product locally: ' + err.message };
+            }
         }
 
         // --- CLOUDFLARE R2 IMAGE UPLOAD ---
@@ -410,31 +455,36 @@
             
             // If it's a File or Blob object, use FormData multipart upload
             if (fileOrDataUrl instanceof File || fileOrDataUrl instanceof Blob) {
-                try {
-                    const formData = new FormData();
-                    formData.append('image', fileOrDataUrl);
-                    
-                    const headers = {};
-                    if (token) headers['Authorization'] = `Bearer ${token}`;
+                if (!this.isStaticMode) {
+                    try {
+                        const formData = new FormData();
+                        formData.append('image', fileOrDataUrl);
+                        
+                        const headers = {};
+                        if (token) headers['Authorization'] = `Bearer ${token}`;
 
-                    const res = await fetch('/api/upload/r2', {
-                        method: 'POST',
-                        headers,
-                        body: formData
-                    });
+                        const res = await fetch('/api/upload/r2', {
+                            method: 'POST',
+                            headers,
+                            body: formData
+                        });
 
-                    if (res.ok) {
-                        const data = await res.json();
-                        return data;
-                    } else {
-                        const errData = await res.json().catch(() => ({}));
-                        console.warn('Live R2 upload returned status:', res.status, errData);
+                        if (res.ok) {
+                            const data = await res.json();
+                            return data;
+                        } else if (res.status === 404 || res.status === 405) {
+                            this.isStaticMode = true;
+                        } else {
+                            const errData = await res.json().catch(() => ({}));
+                            console.warn('Live R2 upload returned status:', res.status, errData);
+                        }
+                    } catch (e) {
+                        this.isStaticMode = true;
+                        console.warn('Live R2 upload failed, using local fallback:', e.message);
                     }
-                } catch (e) {
-                    console.warn('Live R2 upload failed, using local fallback:', e.message);
                 }
 
-                // Client-side / Offline fallback: Convert file to data URL
+                // Client-side / GitHub Pages / Offline fallback: Convert file to data URL
                 return new Promise((resolve) => {
                     const reader = new FileReader();
                     reader.onload = () => {
@@ -458,21 +508,26 @@
 
             // If it's a base64 string or data URL
             if (typeof fileOrDataUrl === 'string' && fileOrDataUrl.startsWith('data:')) {
-                try {
-                    const headers = { 'Content-Type': 'application/json' };
-                    if (token) headers['Authorization'] = `Bearer ${token}`;
+                if (!this.isStaticMode) {
+                    try {
+                        const headers = { 'Content-Type': 'application/json' };
+                        if (token) headers['Authorization'] = `Bearer ${token}`;
 
-                    const res = await fetch('/api/upload/r2', {
-                        method: 'POST',
-                        headers,
-                        body: JSON.stringify({ imageBase64: fileOrDataUrl })
-                    });
+                        const res = await fetch('/api/upload/r2', {
+                            method: 'POST',
+                            headers,
+                            body: JSON.stringify({ imageBase64: fileOrDataUrl })
+                        });
 
-                    if (res.ok) {
-                        return await res.json();
+                        if (res.ok) {
+                            return await res.json();
+                        } else if (res.status === 404 || res.status === 405) {
+                            this.isStaticMode = true;
+                        }
+                    } catch (e) {
+                        this.isStaticMode = true;
+                        console.warn('Live R2 upload failed, using dataUrl fallback:', e.message);
                     }
-                } catch (e) {
-                    console.warn('Live R2 upload failed, using dataUrl fallback:', e.message);
                 }
 
                 return {

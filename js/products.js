@@ -91,18 +91,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-// Load products from API
+// Load products from Backend or Universal Storage Engine
 async function loadProductsFromApi() {
     const grid = document.getElementById('productsGrid');
     try {
-        const response = await fetch('/api/products');
-        if (!response.ok) throw new Error('Failed to load products');
-        productsList = await response.json();
+        if (window.StoreBackend && typeof window.StoreBackend.getProducts === 'function') {
+            productsList = await window.StoreBackend.getProducts();
+        } else {
+            const response = await fetch('/api/products');
+            if (!response.ok) throw new Error('Failed to load products');
+            productsList = await response.json();
+        }
         applyFiltersAndSort();
         updateCategoryCounts();
     } catch (error) {
-        console.warn('API fetch fallback:', error);
-        grid.innerHTML = '<div class="loading">Failed to load catalog. Please check backend connection.</div>';
+        console.warn('API fetch fallback, loading local catalog:', error);
+        try {
+            const localStored = localStorage.getItem('brand_products');
+            if (localStored) {
+                productsList = JSON.parse(localStored);
+                applyFiltersAndSort();
+                updateCategoryCounts();
+                return;
+            }
+        } catch (e) {}
+        if (grid) {
+            grid.innerHTML = '<div class="loading">Failed to load catalog. Please check backend connection.</div>';
+        }
     }
 }
 
