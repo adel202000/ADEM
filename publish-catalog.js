@@ -1,7 +1,25 @@
-// publish-catalog.js - loaded by server for Publish Catalog feature
+// publish-catalog.js - Publish Catalog (local JSON + Cloudflare R2). Never writes base64 images.
 import fs from 'fs';
 import path from 'path';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
+
+function isDataUrl(s) {
+  return typeof s === 'string' && /^data:image\//i.test(s.trim());
+}
+
+function sanitizeProducts(products) {
+  return (products || [])
+    .filter((p) => p && !isDataUrl(p.image))
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      price: p.price,
+      image: p.image,
+      stock: p.stock,
+      created_at: p.created_at
+    }));
+}
 
 export function registerPublishRoutes(app, { db, dataDir, requireAdmin, getR2Client }) {
   app.get('/products-catalog.json', (req, res) => {
@@ -11,7 +29,7 @@ export function registerPublishRoutes(app, { db, dataDir, requireAdmin, getR2Cli
       return res.sendFile(catalogPath);
     }
     try {
-      const products = db.prepare('SELECT * FROM products ORDER BY id ASC').all();
+      const products = sanitizeProducts(db.prepare('SELECT * FROM products ORDER BY id ASC').all());
       res.setHeader('Cache-Control', 'public, max-age=30');
       return res.json(products);
     } catch (e) {
@@ -21,7 +39,10 @@ export function registerPublishRoutes(app, { db, dataDir, requireAdmin, getR2Cli
 
   app.post('/api/products/publish', requireAdmin, async (req, res) => {
     try {
-      const products = db.prepare('SELECT * FROM products ORDER BY id ASC').all();
+      const raw = db.prepare('SELECT * FROM products ORDER BY id ASC').all();
+      const products = sanitizeProducts(raw);
+      const skippedBase64 = raw.length - products.length;
+
       const payload = {
         published_at: new Date().toISOString(),
         count: products.length,
@@ -53,12 +74,18 @@ export function registerPublishRoutes(app, { db, dataDir, requireAdmin, getR2Cli
         }
       }
 
+      let message = r2Uploaded
+        ? ('Published ' + products.length + ' products to local catalog + Cloudflare R2')
+        : ('Published ' + products.length + ' products to local catalog' + (r2Error ? (' (R2 skipped: ' + r2Error + ')') : ' (configure R2 in .env for edge deploy)'));
+      if (skippedBase64 > 0) {
+        message += ' — skipped ' + skippedBase64 + ' base64 image(s) to keep the site small';
+      }
+
       res.json({
         success: true,
-        message: r2Uploaded
-          ? ('Published ' + products.length + ' products to local catalog + Cloudflare R2')
-          : ('Published ' + products.length + ' products to local catalog' + (r2Error ? (' (R2 skipped: ' + r2Error + ')') : ' (configure R2 in .env for edge deploy)')),
+        message,
         count: products.length,
+        skipped_base64: skippedBase64,
         published_at: payload.published_at,
         local_path: '/products-catalog.json',
         r2: { uploaded: r2Uploaded, key: r2Key, error: r2Error }
